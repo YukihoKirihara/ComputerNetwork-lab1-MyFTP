@@ -1,0 +1,5 @@
+/home/zky/lab1/lab1-myftp-YukihoKirihara/CMakeFiles/ftp_server.dir
+/home/zky/lab1/lab1-myftp-YukihoKirihara/CMakeFiles/ftp_client.dir
+/home/zky/lab1/lab1-myftp-YukihoKirihara/CMakeFiles/test.dir
+/home/zky/lab1/lab1-myftp-YukihoKirihara/CMakeFiles/edit_cache.dir
+/home/zky/lab1/lab1-myftp-YukihoKirihara/CMakeFiles/rebuild_cache.dir
