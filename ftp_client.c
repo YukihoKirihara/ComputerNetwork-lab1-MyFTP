@@ -22,6 +22,8 @@
 // Thread
 #include<pthread.h>
 #include<sys/poll.h>    // link thread when compiling "-lthread"
+#include<sys/time.h>
+#include<sys/epoll.h>
 
 #define MAX_INPUT_LENGTH    256     // the maximal length of an input line
 #define MAX_CMD_LENGTH      8       // the maximal length of an command name
@@ -31,13 +33,14 @@
 #define LONG_MSG_LENGTH     1024    // the maximal length of a long message between client and server
 #define HEADER_LENGTH       12      // the length of myFTP header. sizeof(struct myFTP_Header)
 
-// Order the command names to print usage instructions.
-#define OPEN_ORD        1
-#define AUTH_ORD        2
-#define LIST_ORD        4
-#define GET_ORD         8
-#define PUT_ORD         16
-#define QUIT_ORD        32
+// Arguments for the server
+#define MY_BACKLOG          8       // the argument for listen()
+#define EPOLL_NUM           16      // the number of epoll events.
+#define MAX_CLIENT_NUM      8       // the maximal number of clients the server can serve at the same time
+#define IP_ADDR_LENGTH      32      // the maximal length of the IP address string
+#define MAX_USER_LENGTH     4       // "user"
+#define MAX_PASS_LENGTH     6       // "123123"
+#define MAX_LS_LENGTH       2400    // the maximal length of list
 
 // m_type value of struct myFTP_Header
 #define OPEN_CONN_REQUEST       0xA1
@@ -474,7 +477,52 @@ void Get(char * filename) {
         return;
     }
     pld_file_len = Big2Small_Endian(file_data->m_length)-HEADER_LENGTH;
-    pld_file = (char *) malloc(pld_file_len*sizeof(char));
+    pld_file = (char *) malloc(LONG_MSG_LENGTH);
+
+    FILE * localfile = fopen(filename, "w+");
+    if (localfile == NULL) {
+        printf("Error: Can not open file %s.\n", filename);
+        printf("Error details: %s\n", strerror(errno));
+    }
+    int cut = 0;
+    size_t recv_len;
+    while (pld_file_len > LONG_MSG_LENGTH) {
+        recv_len = LONG_MSG_LENGTH;
+        ret = 0;
+        while (ret < recv_len) {
+            recv_cnt = recv(curr_clientfd, pld_file+ret, recv_len-ret, 0);
+            if (recv_cnt < 0) {
+                printf("Error: Socket receive error.\n");
+                exit(1);
+            }
+            ret += recv_cnt;
+        }
+        cut++;
+        pld_file_len-=recv_len;
+        some_waste = fwrite(pld_file, recv_len, 1, localfile);
+
+        if (some_waste != 1) {
+            printf("Error: Can not write file %s.\n", filename);
+            printf("Error details: %s\n", strerror(errno));
+        }
+    }
+    recv_len = pld_file_len;
+    ret = 0;
+    while (ret < recv_len) {
+        recv_cnt = recv(curr_clientfd, pld_file+ret, recv_len-ret, 0);
+        if (recv_cnt < 0) {
+            printf("Error: Socket receive error.\n");
+            exit(1);
+        }
+        ret += recv_cnt;
+    }
+    some_waste = fwrite(pld_file, recv_len, 1, localfile);
+    if (some_waste != 1) {
+        printf("Error: Can not write file %s.\n", filename);
+        printf("Error details: %s\n", strerror(errno));
+    }
+    fclose(localfile);
+    /*pld_file = (char *) malloc(pld_file_len*sizeof(char));
     ret = 0;
     while (ret < pld_file_len) {
         recv_cnt = recv(curr_clientfd, pld_file+ret, pld_file_len-ret, 0);
@@ -509,6 +557,7 @@ void Get(char * filename) {
         printf("Error: Can not save file %s.\n", filename);
         printf("Error details: %s\n", strerror(errno));
     }
+    */
     printf("File %s downloaded\n", filename);
 
     free(get_request);
@@ -562,7 +611,8 @@ void Put(char * filename) {
     for (int i=0; i<pld_send_len-1; i++) 
         pld_send[i] = filename[i];
     pld_send[pld_send_len-1] = '\0';
-    char buf_send[SHORT_MSG_LENGTH], send_len = HEADER_LENGTH+pld_send_len;
+    char buf_send[SHORT_MSG_LENGTH];
+    size_t send_len = HEADER_LENGTH+pld_send_len;
     for (int i=0; i<HEADER_LENGTH; i++) 
         buf_send[i] = *((char *)(put_request)+i);  
     for (int i=0; i<pld_send_len; i++) 
@@ -621,7 +671,48 @@ void Put(char * filename) {
     pld_file_len = ftell(localfile);    // Get the length
     file_data->m_length = Small2Big_Endian(HEADER_LENGTH+pld_file_len);
     fseek(localfile, 0, SEEK_SET);          // Locate the begin of the file, for the read followed.
-    pld_file = (char *) malloc(pld_file_len*(sizeof(char)));
+    pld_file = (char *)malloc(LONG_MSG_LENGTH);
+    send_len = HEADER_LENGTH;
+    for (int i=0; i<send_len; i++) 
+        pld_file[i] = *((char *)(file_data)+i);
+    ret = 0;
+    while (ret < send_len) {
+        send_cnt = send(curr_clientfd, pld_file+ret, send_len-ret, 0);
+        if (send_cnt < 0) {
+            printf("Error: Socket send error.\n");
+            exit(1);
+        }
+        ret += send_cnt;
+    }
+    int cut = 0;
+    while (pld_file_len > LONG_MSG_LENGTH) {
+        send_len = LONG_MSG_LENGTH;
+        some_waste = fread(pld_file, send_len, 1, localfile);
+        ret = 0;
+        while (ret < send_len) {
+            send_cnt = send(curr_clientfd, pld_file+ret, send_len-ret, 0);
+            if (send_cnt < 0) {
+                printf("Error: Socket send error.\n");
+                exit(1);
+            } 
+            ret += send_cnt;
+        }
+        cut++;
+        pld_file_len-=send_len;
+    }
+    send_len = pld_file_len;
+    some_waste = fread(pld_file, send_len, 1, localfile);
+    ret = 0;
+    while (ret < send_len) {
+        send_cnt = send(curr_clientfd, pld_file+ret, send_len-ret, 0);
+        if (send_cnt < 0) {
+            printf("Error: Socket send error.\n");
+            exit(1);
+        }
+        ret += send_cnt;
+    }
+    fclose(localfile);
+    /*pld_file = (char *) malloc(pld_file_len*(sizeof(char)));
     some_waste = fread(pld_file, pld_file_len, 1, localfile);
     fclose(localfile);
     if (some_waste != 1) {
@@ -662,7 +753,7 @@ void Put(char * filename) {
             exit(1);
         }
         ret += send_cnt;
-    }
+    }*/
     printf("File %s uploaded\n", filename);
 
     free(put_request);

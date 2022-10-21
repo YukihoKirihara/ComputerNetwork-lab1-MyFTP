@@ -40,7 +40,7 @@
 #define IP_ADDR_LENGTH      32      // the maximal length of the IP address string
 #define MAX_USER_LENGTH     4       // "user"
 #define MAX_PASS_LENGTH     6       // "123123"
-#define MAX_LS_LENGTH       2400    // the maximal length of 
+#define MAX_LS_LENGTH       2400    // the maximal length of list
 
 // Order the command names to print usage instructions.
 #define OPEN_ORD        1
@@ -393,12 +393,14 @@ void Get_Reply(struct myFTP_Header * header, int curr_fd, int his_id) {
         fseek(localfile, 0, SEEK_END);
         pld_file_len = ftell(localfile);
         fseek(localfile, 0, SEEK_SET);
-        pld_file = (char *) malloc(pld_file_len*(sizeof(char)));
-        some_waste = fread(pld_file, pld_file_len, 1, localfile);
-        fclose(localfile);
-        localfile = NULL;
+        //pld_file = (char *) malloc(pld_file_len*(sizeof(char)));
+        pld_file = (char *) malloc(LONG_MSG_LENGTH);
+        some_waste = fread(pld_file, 1, 1, localfile);
+        // fclose(localfile);
+        // localfile = NULL;
         if (some_waste != 1) 
             file_access = -1;
+        fseek(localfile, 0, SEEK_SET);
     }
     
     struct myFTP_Header * get_reply;
@@ -459,32 +461,38 @@ void Get_Reply(struct myFTP_Header * header, int curr_fd, int his_id) {
         ret += send_cnt;
     }
     int cut = 0;
-    send_len = pld_file_len;
-    while (send_len > LONG_MSG_LENGTH) {
+    while (pld_file_len > LONG_MSG_LENGTH) {
         ret = 0;
-        while (ret < LONG_MSG_LENGTH) {
-            send_cnt = send(curr_fd, pld_file+cut*LONG_MSG_LENGTH+ret, LONG_MSG_LENGTH-ret, 0);
+        send_len = LONG_MSG_LENGTH;
+        some_waste = fread(pld_file, send_len, 1, localfile);
+        while (ret < send_len) {
+            // send_cnt = send(curr_fd, pld_file+cut*LONG_MSG_LENGTH+ret, LONG_MSG_LENGTH-ret, 0);
+            send_cnt = send(curr_fd, pld_file+ret, send_len-ret, 0);
             if (send_cnt < 0) {
                 printf("Error: Socket send error.\n");
                 exit(1);
             }
             ret += send_cnt;
         }
-        printf("ret = %d\n", ret);
+        //printf("ret = %d\n", ret);
         cut++;
-        send_len -= LONG_MSG_LENGTH;
+        pld_file_len -= LONG_MSG_LENGTH;
     }
+    send_len = pld_file_len;
+    some_waste = fread(pld_file, send_len, 1, localfile);
     ret = 0;
     while (ret < send_len) {
-        send_cnt = send(curr_fd, pld_file+cut*LONG_MSG_LENGTH+ret, send_len-ret, 0);
+        // send_cnt = send(curr_fd, pld_file+cut*LONG_MSG_LENGTH+ret, send_len-ret, 0);
+        send_cnt = send(curr_fd, pld_file+ret, send_len-ret, 0);
         if (send_cnt < 0) {
             printf("Error: Socket send error.\n");
             exit(1);
         }
         ret += send_cnt;
     }
-    printf("ret = %d\n", ret);
+    // printf("ret = %d\n", ret);
 
+    fclose(localfile);
     free(filename);
     filename = NULL;
     free(get_reply);
@@ -522,7 +530,7 @@ void Put_Reply(struct myFTP_Header * header, int curr_fd, int his_id) {
     }
     // printf("%s\n",filename);
     filename[--file_name_len] = '\0';
-    
+   
     struct myFTP_Header * put_reply;
     char * buf_send;
     put_reply = (struct myFTP_Header *) malloc(HEADER_LENGTH);
@@ -592,7 +600,7 @@ void Put_Reply(struct myFTP_Header * header, int curr_fd, int his_id) {
         file_len-=recv_len;
         some_waste = fwrite(buf_recv, recv_len, 1, localfile);
 
-        printf("%s\n",buf_recv);
+        //printf("%s\n",buf_recv);
 
         if (some_waste != 1) {
             printf("Error: Can not write file %s.\n", filename);
