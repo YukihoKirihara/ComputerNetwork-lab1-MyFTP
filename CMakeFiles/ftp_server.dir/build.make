@@ -73,15 +73,15 @@ CMakeFiles/ftp_server.dir/ftp_server.c.o: CMakeFiles/ftp_server.dir/flags.make
 CMakeFiles/ftp_server.dir/ftp_server.c.o: ftp_server.c
 CMakeFiles/ftp_server.dir/ftp_server.c.o: CMakeFiles/ftp_server.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zky/lab1/lab1-myftp-YukihoKirihara/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/ftp_server.dir/ftp_server.c.o"
-	/usr/local/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/ftp_server.dir/ftp_server.c.o -MF CMakeFiles/ftp_server.dir/ftp_server.c.o.d -o CMakeFiles/ftp_server.dir/ftp_server.c.o -c /home/zky/lab1/lab1-myftp-YukihoKirihara/ftp_server.c
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/ftp_server.dir/ftp_server.c.o -MF CMakeFiles/ftp_server.dir/ftp_server.c.o.d -o CMakeFiles/ftp_server.dir/ftp_server.c.o -c /home/zky/lab1/lab1-myftp-YukihoKirihara/ftp_server.c
 
 CMakeFiles/ftp_server.dir/ftp_server.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/ftp_server.dir/ftp_server.c.i"
-	/usr/local/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/zky/lab1/lab1-myftp-YukihoKirihara/ftp_server.c > CMakeFiles/ftp_server.dir/ftp_server.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/zky/lab1/lab1-myftp-YukihoKirihara/ftp_server.c > CMakeFiles/ftp_server.dir/ftp_server.c.i
 
 CMakeFiles/ftp_server.dir/ftp_server.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/ftp_server.dir/ftp_server.c.s"
-	/usr/local/bin/gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/zky/lab1/lab1-myftp-YukihoKirihara/ftp_server.c -o CMakeFiles/ftp_server.dir/ftp_server.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/zky/lab1/lab1-myftp-YukihoKirihara/ftp_server.c -o CMakeFiles/ftp_server.dir/ftp_server.c.s
 
 # Object files for target ftp_server
 ftp_server_OBJECTS = \

@@ -1,1 +1,1 @@
-/usr/local/bin/gcc CMakeFiles/ftp_server.dir/ftp_server.c.o -o ftp_server 
+/usr/bin/cc CMakeFiles/ftp_server.dir/ftp_server.c.o -o ftp_server 
